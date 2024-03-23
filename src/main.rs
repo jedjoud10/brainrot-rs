@@ -12,6 +12,8 @@ fn main() {
     let mut you = Register::Real(0.0f32);
     let mut last_success = String::new();
     let mut last_failure = String::new();
+    let mut yapper = false;
+    let mut yappings = String::new();
 
     macro_rules! quit {
         ($a:expr) => {
@@ -33,9 +35,13 @@ fn main() {
         i += 1;
         let words = line.split_whitespace().collect::<Vec<&str>>();
 
-        if words.len() == 0 {
+        if words.len() == 0  {
             continue;
         }
+
+        if yapper && line != "mew" {
+            yappings.push_str(line);
+            }
 
         // REGISTER DEFINITION
         if words[0] == "let" {
@@ -59,13 +65,23 @@ fn main() {
             out!("Changed register type! I don't know which one but surely at least one!")
         }
 
-        // IO OUTPUT
+        // IO RESULT OUTPUT
         if line.ends_with("in the chat") {
             match words[0] {
                 "ws" => println!("{}", last_success),
                 "ls" => println!("{}", last_failure),
                 _ => {}
             }
+        }
+
+        // IO OUTPUT
+        if line == "mew" {
+            yapper = false;
+            print!("{}", yappings);
+            yappings.clear();
+        } else if line == "yap" {
+            yapper = true;
+            continue;
         }
 
         // IO INPUT
@@ -104,6 +120,7 @@ fn main() {
                 "up" => 1,
                 "down" => -1,
                 "bruh" => 0,
+                "silently" => 0,
                 _ => { quit!("Not a fucking rizz option bruh!!!"); 0 },
             };
 
@@ -112,27 +129,11 @@ fn main() {
                 Register::Int(x) => { *x += offset; format!("{x}") },
             };
 
-            let input = format!("Changed value of \"you\" register to {}", out);
+            let input = format!("Changed value of \"you\" register to {}!!", out);
             out!(&input);
         }
 
-        // MATH
-        if line.starts_with("lemme rizz you") {
-            let offset = match words[3] {
-                "up" => 1,
-                "down" => -1,
-                "bruh" => 0,
-                _ => { quit!("Not a fucking rizz option bruh!!!"); 0 },
-            };
 
-            let out = match &mut you {
-                Register::Real(x) => { *x += offset as f32; format!("{x}") },
-                Register::Int(x) => { *x += offset; format!("{x}") },
-            };
-
-            let input = format!("Changed value of \"you\" register to {}", out);
-            out!(&input);
-        }
 
         // CONDITIONAL MARKERS
         match line {
@@ -154,8 +155,7 @@ fn main() {
             std::thread::sleep(Duration::from_millis(eep * mul))
         }
 
-        // CALLBACKS
-        // is _ mogging _
+        // VAL CHECKS
         if line.contains("mogging") {
             let a = words[1];
             let b = words[3];
@@ -183,6 +183,25 @@ fn main() {
             ofcbruh = 696969;
             if i == 696969 {
                 i = cp
+            }
+        }
+
+        // TYPE CHECKS
+        
+        if line.starts_with("is") && !line.contains("mogging") {
+            let a = words[1];
+            let b = words[1];
+
+            if match (a, b) {
+                ("me", "inting") => matches!(me, Register::Int(_)),
+                ("me", "fr") => matches!(me, Register::Real(_)),
+                ("you", "inting") => matches!(you, Register::Int(_)),
+                ("you", "fr") => matches!(you, Register::Real(_)),
+                _ => { quit!("Are you rizzing me up rn??!?!?! BAKA!!"); true }
+            } {
+                i = ofcbruh;
+            } else {
+                i = nuhuh;
             }
         }
     }
