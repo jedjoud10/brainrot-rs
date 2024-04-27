@@ -190,7 +190,7 @@ fn main() {
         
         if line.starts_with("is") && !line.contains("mogging") {
             let a = words[1];
-            let b = words[1];
+            let b = words[2];
 
             if match (a, b) {
                 ("me", "inting") => matches!(me, Register::Int(_)),
