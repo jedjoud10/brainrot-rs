@@ -1,11 +1,16 @@
 # set the "zawg" register to floating point
 let zawg be fr rn
 
+debugginate
+
 # set the "blud" register to integer
 let blud be inting rn
 
 # fetch input and write value to "blud" register
-chat, talk to cro rn
+# chat, talk to cro rn
 
 # read value from "blud" register and output it
-chat, listen to cro rn
+# chat, listen to cro rn
+
+# check if blud register is set to real mode and write to 3rd bit in bitwise register
+is blud fr rn? say on god
