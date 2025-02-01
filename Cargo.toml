@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 uwuify = "0.2.2"
+clap = "4.5.27"
+regex = "1.11.1"

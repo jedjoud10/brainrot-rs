@@ -1,208 +1,49 @@
-use std::time::Duration;
+use std::{env, fs::File, io::Read, path::PathBuf};
+mod parser;
+mod tokenizer;
+mod tokens;
 
-enum Register {
-    Real(f32),
-    Int(i32),
-}
+use clap::*;
+
+use parser::*;
+use tokenizer::*;
 
 fn main() {
-    let file = include_str!("./test.rot");
-    let lines = file.lines().collect::<Vec<&str>>();
-    let mut me = Register::Real(0.0f32);
-    let mut you = Register::Real(0.0f32);
-    let mut last_success = String::new();
-    let mut last_failure = String::new();
-    let mut yapper = false;
-    let mut yappings = String::new();
+    let cwd = env::current_dir().unwrap();
 
-    macro_rules! quit {
-        ($a:expr) => {
-            last_failure = uwuifier::uwuify_str_sse($a)
-        };
-    }
+    // Some clap arg parsing and fun stuff
+    let matches = Command::new("brainrot")
+        .arg(Arg::new("FILE").value_parser(clap::value_parser!(PathBuf)))
+        .arg_required_else_help(true)
+        .subcommand_required(true)
+        .subcommand(
+            Command::new("run")
+            .about("Executes a brainrot .rot file")
+        )
+        .subcommand(
+            Command::new("tokenize")
+            .about("Tokenizes the input only. Prints out a list of tokens")
+        ).get_matches();
 
-    macro_rules! out {
-        ($a:expr) => {
-            last_success = uwuifier::uwuify_str_sse($a)
-        };
-    }
+    let relative_path = matches.get_one::<PathBuf>("FILE").expect("required");
+    let mut file_path = cwd;
+    file_path.push(relative_path);
 
-    let mut i = 0;
-    let mut nuhuh = 696969;
-    let mut ofcbruh = 696969;
-    while i < lines.len() {
-        let line = lines[i];
-        i += 1;
-        let words = line.split_whitespace().collect::<Vec<&str>>();
+    // Opens the source file with the targetted path
+    let mut file = File::open(file_path).expect("could not open file");
+    let mut raw = String::new();
+    file.read_to_string(&mut raw).unwrap();
 
-        if words.len() == 0  {
-            continue;
-        }
-
-        if yapper && line != "mew" {
-            yappings.push_str(line);
+    match matches.subcommand() {
+        Some(("tokenize", sub_matches)) => {
+            for token in tokenize_raw(raw) {
+                println!("{:?}", token);
             }
 
-        // REGISTER DEFINITION
-        if words[0] == "let" {
-            let reg = match words[1] {
-                "you" => &mut you,
-                "me" => &mut me,
-                _ => { quit!("Failed to fetch register type. I don't know why!"); continue },
-            };
-
-            let bytes = match reg {
-                Register::Real(x) => x.to_ne_bytes(),
-                Register::Int(x) => x.to_ne_bytes(),
-            };
-
-            match words[3] {
-                "fr" => *reg = Register::Real(f32::from_ne_bytes(bytes)),
-                "inting" => *reg = Register::Int(i32::from_ne_bytes(bytes)),
-                _ => quit!("Failed to fetch register target!"),
-            };
-
-            out!("Changed register type! I don't know which one but surely at least one!")
-        }
-
-        // IO RESULT OUTPUT
-        if line.ends_with("in the chat") {
-            match words[0] {
-                "ws" => println!("{}", last_success),
-                "ls" => println!("{}", last_failure),
-                _ => {}
-            }
-        }
-
-        // IO OUTPUT
-        if line == "mew" {
-            yapper = false;
-            print!("{}", yappings);
-            yappings.clear();
-        } else if line == "yap" {
-            yapper = true;
-            continue;
-        }
-
-        // IO INPUT
-        if line.starts_with("chat, is this") {
-            println!("{}", line.trim_start_matches("chat, "));
-            let input = std::io::stdin().lines().next().unwrap().unwrap();
-            let float = input.parse::<f32>().unwrap_or_default();
-            let int = input.parse::<i32>().unwrap_or_default();
-
-            match words[3] {
-                "real?" => {
-                    if let Register::Real(x) = &mut you {
-                        *x = float;
-                    }
-
-                    if let Register::Real(x) = &mut me {
-                        *x = float;
-                    }
-                },
-                "inting?" => {
-                    if let Register::Int(x) = &mut you {
-                        *x = int;
-                    }
-
-                    if let Register::Int(x) = &mut me {
-                        *x = int;
-                    }
-                },
-                _ => { quit!("Failed to fetch output register target"); continue }
-            }
-        }
-
-        // MATH
-        if line.starts_with("lemme rizz you") {
-            let offset = match words[3] {
-                "up" => 1,
-                "down" => -1,
-                "bruh" => 0,
-                "silently" => 0,
-                _ => { quit!("Not a fucking rizz option bruh!!!"); 0 },
-            };
-
-            let out = match &mut you {
-                Register::Real(x) => { *x += offset as f32; format!("{x}") },
-                Register::Int(x) => { *x += offset; format!("{x}") },
-            };
-
-            let input = format!("Changed value of \"you\" register to {}!!", out);
-            out!(&input);
-        }
-
-
-
-        // CONDITIONAL MARKERS
-        match line {
-            "nuhuh" => nuhuh = i-1,
-            "ofcbruh" => ofcbruh = i-1,
-            _ => {}
-        }
-
-        // SLEEP
-        if line.starts_with("eep for") {
-            let eep = words[2].parse::<u64>().unwrap();
-            let mul: u64 = match words[3] {
-                "bazillions" => 10,
-                "billions" => 100,
-                "fucks" => 1000,
-                _ => { quit!("Hang yourself you insignificant FUCK"); 0 },
-            };
-
-            std::thread::sleep(Duration::from_millis(eep * mul))
-        }
-
-        // VAL CHECKS
-        if line.contains("mogging") {
-            let a = words[1];
-            let b = words[3];
-
-            let cp = i;
-            match (a, b) {
-                ("you", "me") => {
-                    match (&you, &me) {
-                        (Register::Real(a_), Register::Real(b_)) if a_ > b_ => i = ofcbruh,
-                        (Register::Int(a_), Register::Int(b_)) if a_ > b_ => i = ofcbruh,
-                        _ => i = nuhuh
-                    };
-                },
-                ("me", "you") => {
-                    match (&you, &me) {
-                        (Register::Real(a_), Register::Real(b_)) if a_ < b_ => i = ofcbruh,
-                        (Register::Int(a_), Register::Int(b_)) if a_ < b_ => i = ofcbruh,
-                        _ => i = nuhuh
-                    };
-                },
-                _ => quit!("You should slit yourself you fucking normie")
-            }
-
-            nuhuh = 696969;
-            ofcbruh = 696969;
-            if i == 696969 {
-                i = cp
-            }
-        }
-
-        // TYPE CHECKS
-        
-        if line.starts_with("is") && !line.contains("mogging") {
-            let a = words[1];
-            let b = words[2];
-
-            if match (a, b) {
-                ("me", "inting") => matches!(me, Register::Int(_)),
-                ("me", "fr") => matches!(me, Register::Real(_)),
-                ("you", "inting") => matches!(you, Register::Int(_)),
-                ("you", "fr") => matches!(you, Register::Real(_)),
-                _ => { quit!("Are you rizzing me up rn??!?!?! BAKA!!"); true }
-            } {
-                i = ofcbruh;
-            } else {
-                i = nuhuh;
-            }
-        }
+        },
+        Some(("run", sub_matches)) => {
+            parse_and_execute(tokenize_raw(raw))
+        },
+        _ => todo!(),
     }
 }
